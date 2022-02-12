@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<launch>
+    <node pkg="iros2021" name="robot_server_kinematics" type="kinematics.py" output="screen"/>
+    <node pkg="iros2021" name="robot_server_moveit_bridge" type="moveit_bridge.py" output="screen"/>
+    <node pkg="intera_examples" name="gripper_cuff" type="gripper_cuff_control.py" output="screen"/>
+    <node pkg="iros2021" name="publish_collasion" type="pub_collasion" output="screen"/>
+    
+    
+    <node pkg="intera_interface" name="joint_trajectory_action_server" type="joint_trajectory_action_server.py" output="screen"/>
+    <include file="$(find kinect2_bridge)/launch/kinect2_bridge.launch">
+    </include>
+
+    <include file="$(find realsense2_camera)/launch/rs_rgbd.launch">
+    </include>
+
+    <include file="$(find kinect_baxter_calibration)/launch/publish_calibration.launch">
+    </include>
+</launch>
