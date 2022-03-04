@@ -24,6 +24,7 @@ from geometry_msgs.msg import (
 )
 from std_msgs.msg import Header
 from sensor_msgs.msg import JointState
+from voice.msg import VoiceMsg
 
 from intera_core_msgs.srv import (
     SolvePositionIK,
@@ -112,6 +113,8 @@ class RobotInit(MoveGroupPythonIntefaceTutorial):
         self.move_group.set_max_velocity_scaling_factor(speed)
         self.cameras = intera_interface.Cameras()
         self.right_camera_name = "right_hand_camera"
+        sub = rospy.Subscriber("voice", VoiceMsg, self.voice_callback)
+        self.order = VoiceMsg()
 
         try:
             self.gripper = intera_interface.Gripper(self.valid_limbs[0] + '_gripper')
@@ -160,6 +163,9 @@ class RobotInit(MoveGroupPythonIntefaceTutorial):
 
     def get_gripper_object_weight(self):  # right_hand:position, orientation
         return self.gripper.get_object_weight()
+
+    def voice_callback(self, msg):
+        rospy.loginfo("I heard %d", self.order)
 
     def moveit_move(self, position, orientation=None):
         move_group = self.move_group

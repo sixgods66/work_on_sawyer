@@ -17,7 +17,8 @@ from workpiece_proc.msg import Object
 from workpiece_proc.srv import imageproc, imageprocRequest, imageprocResponse
 from robot_utils import RobotInit
 
-
+from voice.msg import VoiceMsg
+from voice.srv import VoiceSrv, VoiceSrvRequest, VoiceSrvResponse
 
 class DetectInfo:
     def __init__(self):
@@ -336,6 +337,9 @@ if __name__ == "__main__":
     rospy.init_node('assemble_task', anonymous=True)
     # 初始化ROS节点
     det = DetectInfo()
+
+    voice_order()
+
     detect_orientation = [0.0, 1.0, 0.0, 0.0]
     robot_control = RobotInit(0.3)
     mgpit = MoveGroupPythonIntefaceTutorial()
@@ -347,7 +351,6 @@ if __name__ == "__main__":
 
     response = det.get_detect_info()
     response = sorted(response, key=lambda x: x.cl)
-    print(response)
     trans_matrix = det.get_base_to_cam_t()
 
     #base_position = np.array([0.486779, 0.1109, 0.099])
@@ -355,25 +358,28 @@ if __name__ == "__main__":
     rospy.sleep(1)
 
     trans_matrix = det.get_base_to_cam_t()
-    for i in range(len(response)):
+
+    for i in range(len(response)/2):
+        
         obj = response[i]
         position = trans_matrix.dot([response[i].pos_x, response[i].pos_y, response[i].pos_z, 1])
         print(i, response[i].pos_x, response[i].pos_y, response[i].pos_z, response[i].cl)
         print(position)
 
+        cl = response[i].cl
 
         detect_position = np.array([position[0], position[1], position[2]])
-        detect_position[2] -= 0.02
-        detect_position[1] += 0.017
+        detect_position[2] -= 0.00
+        detect_position[1] += 0.015
         detect_position[0] -= 0.008
         robot_control.moveit_move(detect_position, detect_orientation)
         
-        detect_position[2] -= 0.04
+        detect_position[2] -= 0.07
         detect_position[1] += 0.00
         detect_position[0] += 0.00
         robot_control.moveit_move(detect_position, detect_orientation)
         robot_control.control_gripper(0)
-    
+        
         #detect_position = base_position
         detect_position[2] += 0.40
         detect_position[1] += 0.00
@@ -381,33 +387,67 @@ if __name__ == "__main__":
         robot_control.moveit_move(detect_position, detect_orientation)
         
         for j in range(len(response)/2,len(response)):
-            if (j == i + len(response)/2):
+            
+            if j == i + len(response)/2:
                 obj = response[j]
                 position = trans_matrix.dot([response[j].pos_x, response[j].pos_y, response[j].pos_z, 1])
                 detect_position = np.array([position[0], position[1], position[2]])
-                detect_position[2] += 0.10
-                detect_position[1] += 0.013
-                detect_position[0] -= 0.008
-                #detect_position = base_cylinder_position
-                #detect_position[2] += 0.10
-                #detect_position[1] += 0.00
-                #detect_position[0] -= 0.00
-                robot_control.moveit_move(detect_position, detect_orientation)
                 print(j, response[j].pos_x, response[j].pos_y, response[j].pos_z, response[j].cl)
                 print(position)
+                if cl == 0:
+                    detect_position[2] += 0.05
+                    detect_position[1] += 0.01
+                    detect_position[0] -= 0.008
+                    robot_control.moveit_move(detect_position, detect_orientation)
+    
+                    detect_position[2] -= 0.05
+                    detect_position[1] += 0.00
+                    detect_position[0] -= 0.00
+                    robot_control.moveit_move(detect_position, detect_orientation)
 
-                detect_position[2] -= 0.10
-                detect_position[1] += 0.00
-                detect_position[0] -= 0.00
-                robot_control.moveit_move(detect_position, detect_orientation)
+                    robot_control = RobotInit(0.02)
+                    detect_position[2] -= 0.015
+                    detect_position[1] += 0.005
+                    detect_position[0] -= 0.002
+                    robot_control.moveit_move(detect_position, detect_orientation)
+
+                elif cl == 1:
+                    detect_position[2] += 0.05
+                    detect_position[1] += 0.01
+                    detect_position[0] -= 0.008
+                    robot_control.moveit_move(detect_position, detect_orientation)
+
+                    detect_position[2] -= 0.05
+                    detect_position[1] += 0.00
+                    detect_position[0] -= 0.00
+                    robot_control.moveit_move(detect_position, detect_orientation)
+                    
+                    robot_control = RobotInit(0.02)
+                    detect_position[2] -= 0.015
+                    detect_position[1] += 0.002
+                    detect_position[0] -= 0.0015
+                    robot_control.moveit_move(detect_position, detect_orientation)
+
+                elif cl == 2:
+                    detect_position[2] += 0.05
+                    detect_position[1] += 0.01
+                    detect_position[0] -= 0.008
+                    robot_control.moveit_move(detect_position, detect_orientation)
+
+                    detect_position[2] -= 0.05
+                    detect_position[1] += 0.00
+                    detect_position[0] -= 0.00
+                    robot_control.moveit_move(detect_position, detect_orientation)
+                    
+                    robot_control = RobotInit(0.02)
+                    detect_position[2] -= 0.015
+                    detect_position[1] += 0.002
+                    detect_position[0] -= 0.002
+                    robot_control.moveit_move(detect_position, detect_orientation)
+      
                 robot_control.control_gripper(100)
-
-                break
-            else:
-                j = j+1
-        break
-
-        robot_control.moveit_move(np.array([0.251, -0.154, 0.599]), detect_orientation)
-        rospy.sleep(1)
-
-        i = i+1
+                robot_control = RobotInit(0.3)
+                robot_control.moveit_move(np.array([0.251, -0.154, 0.599]), detect_orientation)
+                rospy.sleep(1)
+    
+    
