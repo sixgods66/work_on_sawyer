@@ -113,14 +113,22 @@ class RobotInit(MoveGroupPythonIntefaceTutorial):
         self.move_group.set_max_velocity_scaling_factor(speed)
         self.cameras = intera_interface.Cameras()
         self.right_camera_name = "right_hand_camera"
-        sub = rospy.Subscriber("voice", VoiceMsg, self.voice_callback)
-        self.order = VoiceMsg()
+        sub = rospy.Subscriber("voice", VoiceMsg, self.voice_callback, queue_size=1, buff_size=1, tcp_nodelay=True)
+
+        self.response = None
+        self.trans_matrix = None
 
         try:
             self.gripper = intera_interface.Gripper(self.valid_limbs[0] + '_gripper')
         except (ValueError, OSError) as e:
             rospy.logerr("Could not detect an electric gripper attached to the robot.")
             self.clean_shutdown()
+
+    def set_detect_result(self, response):
+        self.response = response
+
+    def set_transmatrix(self, transmatrix):
+        self.trans_matrix = transmatrix
 
     def change_speed(self, speed):  # 改变关节的速度（0-1）
         self.limb.set_joint_position_speed(speed)
@@ -165,7 +173,21 @@ class RobotInit(MoveGroupPythonIntefaceTutorial):
         return self.gripper.get_object_weight()
 
     def voice_callback(self, msg):
-        rospy.loginfo("I heard %d", self.order)
+        """
+                rect  round  hex  rect-b  round-b  hex-b
+        cl       0      1     2     3       4       5
+        v-order  2      3     4
+        @param msg:
+        @return:
+        """
+        print('receive command is: {}.'.format(msg.order))
+
+        if msg.order == 2:
+            self.assembly_proc(0)
+        elif msg.order == 3:
+            self.assembly_proc(1)
+        elif msg.order == 4:
+            self.assembly_proc(2)
 
     def moveit_move(self, position, orientation=None):
         move_group = self.move_group
@@ -241,6 +263,82 @@ class RobotInit(MoveGroupPythonIntefaceTutorial):
 
     def get_cur_pos(self):
         return intera_interface.Limb(self.valid_limbs[0]).endpoint_pose()
+
+    def adjust_det_pose(self, detect_position, bias):
+        detect_position[0] += bias[0]
+        detect_position[1] += bias[1]
+        detect_position[2] += bias[2]
+
+        return detect_position
+
+    def assembly_proc(self, cl):
+        if self.response is None or self.trans_matrix is None:
+            print('detect result is not prepared')
+            return
+
+        detect_orientation = [0.0, 1.0, 0.0, 0.0]
+        response = self.response
+
+        workpiece_position = self.trans_matrix.dot([response[cl].pos_x, response[cl].pos_y, response[cl].pos_z, 1])
+        print('workpiece: ', cl, response[cl].pos_x, response[cl].pos_y, response[cl].pos_z, response[cl].cl)
+        print(workpiece_position)
+
+        detect_position = np.array([workpiece_position[0], workpiece_position[1], workpiece_position[2]])
+        detect_position = self.adjust_det_pose(detect_position, [-0.008, 0.015, 0.0])
+        self.moveit_move(detect_position, detect_orientation)
+
+        detect_position = self.adjust_det_pose(detect_position, [0., 0., -0.07])
+        self.moveit_move(detect_position, detect_orientation)
+        self.control_gripper(0)
+
+        # detect_position = base_position
+        detect_position = self.adjust_det_pose(detect_position, [0., 0., 0.40])
+        self.moveit_move(detect_position, detect_orientation)
+        print("*** grasp workpiece {} is finished".format(cl))
+
+        base_cl = cl + 3
+
+        position = self.trans_matrix.dot([response[base_cl].pos_x, response[base_cl].pos_y, response[base_cl].pos_z, 1])
+        base_detect_position = np.array([position[0], position[1], position[2]])
+
+        if base_cl == 3:
+            base_detect_position = self.adjust_det_pose(base_detect_position, [-0.008, 0.01, 0.05])
+            self.moveit_move(base_detect_position, detect_orientation)
+
+            base_detect_position = self.adjust_det_pose(base_detect_position, [0., 0., -0.05])
+            self.moveit_move(base_detect_position, detect_orientation)
+
+            self.change_speed(0.02)
+            base_detect_position = self.adjust_det_pose(base_detect_position, [-0.002, 0.005, -0.015])
+            self.moveit_move(base_detect_position, detect_orientation)
+
+        elif base_cl == 4:
+            base_detect_position = self.adjust_det_pose(base_detect_position, [-0.008, 0.01, 0.05])
+            self.moveit_move(base_detect_position, detect_orientation)
+
+            base_detect_position = self.adjust_det_pose(base_detect_position, [0., 0., -0.05])
+            self.moveit_move(base_detect_position, detect_orientation)
+
+            self.change_speed(0.02)
+            base_detect_position = self.adjust_det_pose(base_detect_position, [-0.0015, 0.002, -0.015])
+            self.moveit_move(base_detect_position, detect_orientation)
+
+        elif base_cl == 5:
+            base_detect_position = self.adjust_det_pose(base_detect_position, [-0.008, 0.01, 0.05])
+            self.moveit_move(base_detect_position, detect_orientation)
+
+            base_detect_position = self.adjust_det_pose(base_detect_position, [0., 0., -0.05])
+            self.moveit_move(base_detect_position, detect_orientation)
+
+            self.change_speed(0.02)
+            base_detect_position = self.adjust_det_pose(base_detect_position, [-0.002, 0.002, -0.015])
+            self.moveit_move(base_detect_position, detect_orientation)
+
+        self.control_gripper(100)
+        print("*** put in base {} is finished".format(base_cl))
+        self.change_speed(0.3)
+        self.moveit_move(np.array([0.251, -0.154, 0.599]), detect_orientation)
+
 
 
 if __name__ == "__main__":

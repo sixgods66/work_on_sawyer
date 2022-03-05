@@ -338,8 +338,6 @@ if __name__ == "__main__":
     # 初始化ROS节点
     det = DetectInfo()
 
-    voice_order()
-
     detect_orientation = [0.0, 1.0, 0.0, 0.0]
     robot_control = RobotInit(0.3)
     mgpit = MoveGroupPythonIntefaceTutorial()
@@ -353,101 +351,100 @@ if __name__ == "__main__":
     response = sorted(response, key=lambda x: x.cl)
     trans_matrix = det.get_base_to_cam_t()
 
-    #base_position = np.array([0.486779, 0.1109, 0.099])
-    base_cylinder_position = np.array([0.4298, 0.004563, 0.101558])
-    rospy.sleep(1)
+    robot_control.set_detect_result(response)
+    robot_control.set_transmatrix(trans_matrix)
 
-    trans_matrix = det.get_base_to_cam_t()
+    rospy.spin()
 
-    for i in range(len(response)/2):
-        
-        obj = response[i]
-        position = trans_matrix.dot([response[i].pos_x, response[i].pos_y, response[i].pos_z, 1])
-        print(i, response[i].pos_x, response[i].pos_y, response[i].pos_z, response[i].cl)
-        print(position)
 
-        cl = response[i].cl
-
-        detect_position = np.array([position[0], position[1], position[2]])
-        detect_position[2] -= 0.00
-        detect_position[1] += 0.015
-        detect_position[0] -= 0.008
-        robot_control.moveit_move(detect_position, detect_orientation)
-        
-        detect_position[2] -= 0.07
-        detect_position[1] += 0.00
-        detect_position[0] += 0.00
-        robot_control.moveit_move(detect_position, detect_orientation)
-        robot_control.control_gripper(0)
-        
-        #detect_position = base_position
-        detect_position[2] += 0.40
-        detect_position[1] += 0.00
-        detect_position[0] += 0.00
-        robot_control.moveit_move(detect_position, detect_orientation)
-        
-        for j in range(len(response)/2,len(response)):
-            
-            if j == i + len(response)/2:
-                obj = response[j]
-                position = trans_matrix.dot([response[j].pos_x, response[j].pos_y, response[j].pos_z, 1])
-                detect_position = np.array([position[0], position[1], position[2]])
-                print(j, response[j].pos_x, response[j].pos_y, response[j].pos_z, response[j].cl)
-                print(position)
-                if cl == 0:
-                    detect_position[2] += 0.05
-                    detect_position[1] += 0.01
-                    detect_position[0] -= 0.008
-                    robot_control.moveit_move(detect_position, detect_orientation)
-    
-                    detect_position[2] -= 0.05
-                    detect_position[1] += 0.00
-                    detect_position[0] -= 0.00
-                    robot_control.moveit_move(detect_position, detect_orientation)
-
-                    robot_control = RobotInit(0.02)
-                    detect_position[2] -= 0.015
-                    detect_position[1] += 0.005
-                    detect_position[0] -= 0.002
-                    robot_control.moveit_move(detect_position, detect_orientation)
-
-                elif cl == 1:
-                    detect_position[2] += 0.05
-                    detect_position[1] += 0.01
-                    detect_position[0] -= 0.008
-                    robot_control.moveit_move(detect_position, detect_orientation)
-
-                    detect_position[2] -= 0.05
-                    detect_position[1] += 0.00
-                    detect_position[0] -= 0.00
-                    robot_control.moveit_move(detect_position, detect_orientation)
-                    
-                    robot_control = RobotInit(0.02)
-                    detect_position[2] -= 0.015
-                    detect_position[1] += 0.002
-                    detect_position[0] -= 0.0015
-                    robot_control.moveit_move(detect_position, detect_orientation)
-
-                elif cl == 2:
-                    detect_position[2] += 0.05
-                    detect_position[1] += 0.01
-                    detect_position[0] -= 0.008
-                    robot_control.moveit_move(detect_position, detect_orientation)
-
-                    detect_position[2] -= 0.05
-                    detect_position[1] += 0.00
-                    detect_position[0] -= 0.00
-                    robot_control.moveit_move(detect_position, detect_orientation)
-                    
-                    robot_control = RobotInit(0.02)
-                    detect_position[2] -= 0.015
-                    detect_position[1] += 0.002
-                    detect_position[0] -= 0.002
-                    robot_control.moveit_move(detect_position, detect_orientation)
-      
-                robot_control.control_gripper(100)
-                robot_control = RobotInit(0.3)
-                robot_control.moveit_move(np.array([0.251, -0.154, 0.599]), detect_orientation)
-                rospy.sleep(1)
+    # for i in range(len(response)/2):
+    #     obj = response[i]
+    #     position = trans_matrix.dot([response[i].pos_x, response[i].pos_y, response[i].pos_z, 1])
+    #     print(i, response[i].pos_x, response[i].pos_y, response[i].pos_z, response[i].cl)
+    #     print(position)
+    #
+    #     cl = response[i].cl
+    #
+    #     detect_position = np.array([position[0], position[1], position[2]])
+    #     detect_position[2] -= 0.00
+    #     detect_position[1] += 0.015
+    #     detect_position[0] -= 0.008
+    #     robot_control.moveit_move(detect_position, detect_orientation)
+    #
+    #     detect_position[2] -= 0.07
+    #     detect_position[1] += 0.00
+    #     detect_position[0] += 0.00
+    #     robot_control.moveit_move(detect_position, detect_orientation)
+    #     robot_control.control_gripper(0)
+    #
+    #     #detect_position = base_position
+    #     detect_position[2] += 0.40
+    #     detect_position[1] += 0.00
+    #     detect_position[0] += 0.00
+    #     robot_control.moveit_move(detect_position, detect_orientation)
+    #
+    #     for j in range(len(response)/2, len(response)):
+    #
+    #         if j == i + len(response)/2:
+    #             obj = response[j]
+    #             position = trans_matrix.dot([response[j].pos_x, response[j].pos_y, response[j].pos_z, 1])
+    #             detect_position = np.array([position[0], position[1], position[2]])
+    #             print(j, response[j].pos_x, response[j].pos_y, response[j].pos_z, response[j].cl)
+    #             print(position)
+    #             if cl == 0:
+    #                 detect_position[2] += 0.05
+    #                 detect_position[1] += 0.01
+    #                 detect_position[0] -= 0.008
+    #                 robot_control.moveit_move(detect_position, detect_orientation)
+    #
+    #                 detect_position[2] -= 0.05
+    #                 detect_position[1] += 0.00
+    #                 detect_position[0] -= 0.00
+    #                 robot_control.moveit_move(detect_position, detect_orientation)
+    #
+    #                 robot_control = RobotInit(0.02)
+    #                 detect_position[2] -= 0.015
+    #                 detect_position[1] += 0.005
+    #                 detect_position[0] -= 0.002
+    #                 robot_control.moveit_move(detect_position, detect_orientation)
+    #
+    #             elif cl == 1:
+    #                 detect_position[2] += 0.05
+    #                 detect_position[1] += 0.01
+    #                 detect_position[0] -= 0.008
+    #                 robot_control.moveit_move(detect_position, detect_orientation)
+    #
+    #                 detect_position[2] -= 0.05
+    #                 detect_position[1] += 0.00
+    #                 detect_position[0] -= 0.00
+    #                 robot_control.moveit_move(detect_position, detect_orientation)
+    #
+    #                 robot_control = RobotInit(0.02)
+    #                 detect_position[2] -= 0.015
+    #                 detect_position[1] += 0.002
+    #                 detect_position[0] -= 0.0015
+    #                 robot_control.moveit_move(detect_position, detect_orientation)
+    #
+    #             elif cl == 2:
+    #                 detect_position[2] += 0.05
+    #                 detect_position[1] += 0.01
+    #                 detect_position[0] -= 0.008
+    #                 robot_control.moveit_move(detect_position, detect_orientation)
+    #
+    #                 detect_position[2] -= 0.05
+    #                 detect_position[1] += 0.00
+    #                 detect_position[0] -= 0.00
+    #                 robot_control.moveit_move(detect_position, detect_orientation)
+    #
+    #                 robot_control = RobotInit(0.02)
+    #                 detect_position[2] -= 0.015
+    #                 detect_position[1] += 0.002
+    #                 detect_position[0] -= 0.002
+    #                 robot_control.moveit_move(detect_position, detect_orientation)
+    #
+    #             robot_control.control_gripper(100)
+    #             robot_control = RobotInit(0.3)
+    #             robot_control.moveit_move(np.array([0.251, -0.154, 0.599]), detect_orientation)
+    #             rospy.sleep(1)
     
     
